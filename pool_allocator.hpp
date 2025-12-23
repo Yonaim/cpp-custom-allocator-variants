@@ -114,7 +114,7 @@ namespace yn
                 cur += p->block_size;
             }
         }
-        
+
         PoolNode *find_or_create_pool(size_t bs)
         {
             PoolNode *p;
@@ -130,6 +130,25 @@ namespace yn
                 _pools = p;
             }
             return p;
+        }
+
+        // allocator는 연속된 메모리를 돌려주어야하므로 무조건 올림 처리하여 할당
+        void *allocate_bytes(size_t bytes)
+        {
+            bytes = align_up(bytes, BLOCK_SIZE_GRANULARITY);
+            PoolNode *p = find_or_create_pool(bytes);
+            FreeNode *out = p->block_list;
+            p->block_list = out->next;
+            return reinterpret_cast<void *>(out);
+        }
+
+        void deallocate_bytes(void *ptr, size_t bytes)
+        {
+            bytes = align_up(bytes, BLOCK_SIZE_GRANULARITY);
+            PoolNode *p = find_or_create_pool(bytes);
+            FreeNode *put = reinterpret_cast<FreeNode *>(ptr);
+            put->next = p->block_list;
+            p->block_list = put;
         }
     };
 
