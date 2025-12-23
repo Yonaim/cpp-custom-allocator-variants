@@ -42,7 +42,7 @@ namespace yn
         enum
         {
             BLOCK_PER_CHUNK = 64,
-            BLOCK_SIZE_BASE = 64
+            BLOCK_SIZE_GRANULARITY = 64
         };
 
         // block_size 값에 따라 하나씩 존재
@@ -57,7 +57,7 @@ namespace yn
 
             // block size만 정해지면 나머지는 enum 상수값에 의해 알아서 결정됨
             PoolNode(size_t bs)
-                : block_size(align_up(bs, BLOCK_SIZE_BASE)),
+                : block_size(align_up(bs, BLOCK_SIZE_GRANULARITY)),
                   chunk_size(block_size * BLOCK_PER_CHUNK), chunk_list(NULL), block_list(NULL),
                   next(NULL)
             {
@@ -80,6 +80,8 @@ namespace yn
                 while (c)
                 {
                     ::operator delete(c->mem);
+                    c = c->next;
+                    delete c;
                 }
                 _pools = p->next;
                 delete p;
@@ -93,8 +95,42 @@ namespace yn
             if (--_refcount == 0)
                 delete this;
         }
-        void      refill(PoolNode *p) {}
-        PoolNode *find_or_create_pool() {}
+
+        // 하나의 chunk를 추가하고 쪼개 block 리스트에 추가
+        void refill(PoolNode *p)
+        {
+            void      *mem = ::operator new(p->chunk_size);
+            ChunkNode *new_chunk = new ChunkNode(mem, p->chunk_list);
+            p->chunk_list = new_chunk;
+
+            // carve blocks
+            char *cur = (char *)mem;
+            char *end = cur + p->chunk_size;
+            while (cur + p->block_size <= end)
+            {
+                FreeNode *new_block = reinterpret_cast<FreeNode *>(cur);
+                new_block->next = p->block_list;
+                p->block_list = new_block;
+                cur += p->block_size;
+            }
+        }
+        
+        PoolNode *find_or_create_pool(size_t bs)
+        {
+            PoolNode *p;
+
+            bs = align_up(bs, BLOCK_SIZE_GRANULARITY);
+            p = _pools;
+            while (p && p->block_size != bs)
+                p = p->next;
+            if (!p)
+            {
+                p = new PoolNode(bs);
+                p->next = _pools;
+                _pools = p;
+            }
+            return p;
+        }
     };
 
     // ------------------------------------------------------------
