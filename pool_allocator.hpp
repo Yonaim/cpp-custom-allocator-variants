@@ -2,13 +2,14 @@
 #define POOL_ALLOCATOR_HPP
 
 #include <cstddef> // size_t, ptrdiff_t
+#include <limits>
 
 /*
   - 복사/변환 생성자로 생성된 allocator는 같은 PoolAllocState를 공유
   - PoolAllocState에서 block_size별로 pool를 관리
 */
 
-namespace yn
+namespace yona
 {
     // x를 alignment(a)의 배수로 올림
     // a는 2의 제곱수여야함!!! (즉, 0b100..0)
@@ -178,7 +179,7 @@ namespace yn
         // constructor
         PoolAllocator() : _state(PoolAllocState()) {}
         PoolAllocator(const PoolAllocator &orig) : _state(orig._state) {}
-        PoolAllocator &operator=(cosnt PoolAllocator &orig)
+        PoolAllocator &operator=(const PoolAllocator &orig)
         {
             _state = orig._state;
             return *this;
