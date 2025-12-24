@@ -140,6 +140,8 @@ namespace yona
         {
             bytes = align_up(bytes, BLOCK_SIZE_GRANULARITY);
             PoolNode *p = find_or_create_pool(bytes);
+            if (!p->block_list)
+                refill(p);
             FreeNode *out = p->block_list;
             p->block_list = out->next;
             return reinterpret_cast<void *>(out);
