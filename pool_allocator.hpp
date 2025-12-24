@@ -3,6 +3,7 @@
 
 #include <cstddef> // size_t, ptrdiff_t
 #include <limits>
+#include <new>
 
 /*
   - 복사/변환 생성자로 생성된 allocator는 같은 PoolAllocState를 공유
@@ -164,7 +165,7 @@ namespace yona
         typedef const T       *const_pointer;
         typedef T              value_type;
         typedef size_t         size_type;
-        typedef std::ptrdiff_t diefference_type;
+        typedef std::ptrdiff_t difference_type;
 
         template <class U>
         struct rebind
@@ -177,7 +178,7 @@ namespace yona
 
       public:
         // constructor
-        PoolAllocator() : _state(PoolAllocState()) {}
+        PoolAllocator() : _state(new PoolAllocState) {}
         PoolAllocator(const PoolAllocator &orig) : _state(orig._state) {}
         PoolAllocator &operator=(const PoolAllocator &orig)
         {
@@ -212,8 +213,8 @@ namespace yona
             new ((void *)p) T(val);
         }
 
-        void destory(pointer p) { p->~T(); }
+        void destroy(pointer p) { p->~T(); }
     };
-} // namespace yn
+} // namespace yona
 
 #endif
