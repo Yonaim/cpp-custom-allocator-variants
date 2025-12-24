@@ -179,16 +179,24 @@ namespace yona
       public:
         // constructor
         PoolAllocator() : _state(new PoolAllocState) {}
-        PoolAllocator(const PoolAllocator &orig) : _state(orig._state) {}
+        PoolAllocator(const PoolAllocator &orig) : _state(orig._state) { _state->retain(); }
         PoolAllocator &operator=(const PoolAllocator &orig)
         {
-            _state = orig._state;
+            if (this != &orig)
+            {
+                _state->release();
+                _state = orig._state;
+                _state->retain();
+            }
             return *this;
         }
         template <class U>
         PoolAllocator(const PoolAllocator<U> &orig) : _state(orig._state)
         {
+            _state->retain();
         }
+
+        ~PoolAllocator() { _state->release(); }
 
         pointer allocate(size_type n, const void *cvp = 0)
         {
